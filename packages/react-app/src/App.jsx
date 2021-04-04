@@ -11,8 +11,6 @@ import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useC
 import { Header, Account, Faucet, Contract, GasGauge, ThemeSwitch } from "./components";
 import { Transactor } from "./helpers";
 import { formatEther, parseEther } from "@ethersproject/units";
-//import Hints from "./Hints";
-import { Hints, ExampleUI } from "./views"
 import { useThemeSwitcher } from "react-css-theme-switcher";
 import { INFURA_ID, DAI_ADDRESS, DAI_ABI, NETWORK, NETWORKS } from "./constants";
 import Hackathon from "./components/Contract/Hackathon";
@@ -162,17 +160,6 @@ function App(props) {
       <Header />
       {networkDisplay}
       <BrowserRouter>
-        <Menu style={{ textAlign:"center" }} selectedKeys={[route]} mode="horizontal">
-        <Menu.Item key="/">
-            <Link onClick={()=>{setRoute("/")}} to="/">HackathonMunon</Link>
-          </Menu.Item>
-          <Menu.Item key="/hints">
-            <Link onClick={()=>{setRoute("/hints")}} to="/hints">Hints</Link>
-          </Menu.Item>
-          <Menu.Item key="/exampleui">
-            <Link onClick={()=>{setRoute("/exampleui")}} to="/exampleui">ExampleUI</Link>
-          </Menu.Item>
-        </Menu>
         <Switch>
           <Route exact path="/">
             <Contract
@@ -194,21 +181,6 @@ function App(props) {
               address={address}
               blockExplorer={blockExplorer}
               current_view="hackathon"
-            />
-          </Route>
-          <Route path="/hints">
-            <Hints
-              address={address}
-            />
-          </Route>
-          <Route path="/exampleui">
-            <ExampleUI
-              address={address}
-              userProvider={userProvider}
-              localProvider={localProvider}
-              tx={tx}
-              writeContracts={writeContracts}
-              readContracts={readContracts}
             />
           </Route>
         </Switch>

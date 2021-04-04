@@ -27,12 +27,11 @@ contract HackathonMunon
     uint256 value
   );
 
-  event RatingSubmited
+  event RateAllSubmited
   (
     uint256 hackathon_id,
     address reviewer_addr,
-    address reviewed_addr,
-    uint256 points
+    uint256[] points
   );
 
   event CashOut
@@ -84,7 +83,6 @@ contract HackathonMunon
   uint256 public hackathon_count; // Helps generating a new hackathon id
   mapping(uint256 => mapping(address => bool)) public participant_has_cashed_out; // Helps preventing double cash out
   mapping(uint256 => uint256) public total_hackathon_points; // Helps calculating pot splits
-  uint256 entry_fee = 0.03 ether; // Hackathon entry fee
 
   // Modifiers
   modifier paysEntryFee(uint256 hackathon_id)
@@ -105,15 +103,12 @@ contract HackathonMunon
     _;
   }
 
-  modifier participantExists(uint256 hackathon_id, address participant_addr)
+  modifier pointsAreValid(uint256[] memory points, uint256 hackathon_id)
   {
-    require(hackathon_participants[hackathon_id][participant_addr].addr != address(0), "Participant does not exists");
-    _;
-  }
-
-  modifier pointsAreValid(uint256 points)
-  {
-    require(points <= 5, "Points are greater than 5");
+    for (uint i=0; i<hackathon_participant_addresses[hackathon_id].length; i++) {
+      require(points[i] <= 5, "A submited review has points greater than 5");
+    }
+    require(points.length == getParticipantCount(hackathon_id), "Amount of reviews submitted doesnt't match hackathon participant count");
     _;
   }
 
@@ -193,18 +188,20 @@ contract HackathonMunon
     emit SponsorshipSubmited(hackathon_id, msg.value);
   }
 
-  function rate(
+  function rateAll(
     uint256 hackathon_id,
-    address participant_addr,
-    uint256 points
-  ) public hasJoined(hackathon_id) participantExists(hackathon_id, participant_addr) pointsAreValid(points) isReviewEnabled(hackathon_id)
+    uint256[] memory points
+  ) public hasJoined(hackathon_id) pointsAreValid(points, hackathon_id) isReviewEnabled(hackathon_id)
   {
-    uint256 rating_stored = participant_ratings[hackathon_id][msg.sender][participant_addr];
-    hackathon_participants[hackathon_id][participant_addr].points = hackathon_participants[hackathon_id][participant_addr].points.add(
-      points).sub(rating_stored);
-    total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id].add(points).sub(rating_stored);
-    participant_ratings[hackathon_id][msg.sender][participant_addr] = points;
-    emit RatingSubmited(hackathon_id, msg.sender, participant_addr, points);
+    for (uint i=0; i<hackathon_participant_addresses[hackathon_id].length; i++) {
+        address reviewed_address = hackathon_participant_addresses[hackathon_id][i];
+        uint256 rating_stored = participant_ratings[hackathon_id][msg.sender][reviewed_address];
+        hackathon_participants[hackathon_id][reviewed_address].points = hackathon_participants[hackathon_id][reviewed_address].points.add(
+          points[i]).sub(rating_stored);
+        total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id].add(points[i]).sub(rating_stored);
+        participant_ratings[hackathon_id][msg.sender][reviewed_address] = points[i];
+    }
+    emit RateAllSubmited(hackathon_id, msg.sender, points);
   }
 
   function cashOut(uint256 hackathon_id)

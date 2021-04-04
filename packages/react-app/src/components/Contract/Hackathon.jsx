@@ -118,10 +118,10 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
     contract.finishHackathon(id)
   }
 
-  const handleSubmittRating = async (participant_id, participant_address, e) => {
+  const handleSubmittRating = async (e) => {
     let user_signer = await user_provider.getSigner()
     contract=contract.connect(user_signer)
-    contract.rate(id, participant_address, radioButtonRatings[participant_id])
+    contract.rateAll(id, radioButtonRatings)
   };
 
   const handleRadioButtonClick = (participant_id, e) => {
@@ -163,15 +163,13 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
               <Radio value={3}>3</Radio>
               <Radio value={4}>4</Radio>
               <Radio value={5}>5</Radio>
-              <div>
-                <Button onClick={(e) => handleSubmittRating(participant.id, participant.addr, e)}>
-                  Rate
-                </Button>
-              </div>
             </Radio.Group>
           }
         </List.Item>
       )}/>
+      <Button onClick={(e) => handleSubmittRating(e)}>
+        Rate all participants
+      </Button>
     </div>
   }
 
@@ -183,9 +181,9 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
       {refreshLoading &&
         <div style={{marginTop:8}}>
           <SyncOutlined spin />Refreshing
-          <Divider />
         </div>
       }
+      <Divider />
       <h1>{hackathonName}</h1>
       {isRegistrationOpen() &&
         <p>Registrations Open!</p>

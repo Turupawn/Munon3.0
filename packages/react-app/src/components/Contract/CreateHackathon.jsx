@@ -39,9 +39,7 @@ export default function CreateHackathon({ contract, user_provider }) {
         }  
 
         let ipfs_image_hash = result[0].hash
-        console.log(ipfs_image_hash)
         let entry_fee_wei = parseEther(hackathonEntryFee)
-        console.log(entry_fee_wei)
         contract.createHackathon(hackathonName, ipfs_image_hash, BigNumber.from(entry_fee_wei))
       });
     }
@@ -68,7 +66,7 @@ export default function CreateHackathon({ contract, user_provider }) {
             paddingRight: 6,
             fontSize: 24,
           }}>
-          <h2>Create new Hackathon</h2>
+          <h4>Create new Hackathon</h4>
           <Form layout="vertical">
             <Form.Item label="Name">
               <Input onChange={(e) => setHackathonName(e.target.value)} type="text" required={true} placeholder="e.g. My hackathon"></Input>

@@ -9,6 +9,7 @@ import { Transactor } from "../../helpers";
 import tryToDisplay from "./utils";
 import Blockies from "react-blockies";
 import { SyncOutlined } from '@ant-design/icons';
+
 const { utils } = require("ethers");
 const IPFS = require('ipfs-api');
 const ipfs = new IPFS({ host: 'ipfs.infura.io', port: 5001, protocol: 'https'});
@@ -17,6 +18,7 @@ const ipfs = new IPFS({ host: 'ipfs.infura.io', port: 5001, protocol: 'https'});
 export default function HackathonList({ contract, user_provider, select_hackathon_function }) {
   const [initializing_triggered, setInitializingTriggered] = useState(false);
   const [hackathons, setHackathons] = useState([]);
+  const [hackathonsLoaded, setHackathonsLoaded] = useState(false);
 
   const initHackathonList = async (e) => {
     console.log("Initializing...")
@@ -39,6 +41,7 @@ export default function HackathonList({ contract, user_provider, select_hackatho
           })
       }
       setHackathons(hackathons)
+      setHackathonsLoaded(true)
     }
   }
   initHackathonList()
@@ -49,7 +52,7 @@ export default function HackathonList({ contract, user_provider, select_hackatho
 
   function HackathonListElement(id, name, image_hash) {
     return <div style={{ margin: 2 }} key={id}>
-      <h2>{name}</h2>
+      <h1>{name}</h1>
       <img width="200" src={"http://ipfs.io/ipfs/" + image_hash}></img><br/>
       <Button onClick={(e) => handleSelectHackathonClicked(id)}>Go to hackathon</Button>
       <Divider />
@@ -57,13 +60,13 @@ export default function HackathonList({ contract, user_provider, select_hackatho
   }
 
   return <div>
-      {hackathons.length == 0 &&
+      {!hackathonsLoaded &&
         <div style={{marginTop:8}}>
           <SyncOutlined spin />Loading hackathons
           <Divider />
         </div>
       }
-      {hackathons.length != 0 &&
+      {hackathonsLoaded &&
         (hackathons.map(function(hackathon) {
           return HackathonListElement(hackathon.id, hackathon.name, hackathon.image_hash);
         }))

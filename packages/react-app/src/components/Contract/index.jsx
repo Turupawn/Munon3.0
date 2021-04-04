@@ -31,7 +31,7 @@ export default function Contract({ customContract, account, gasPrice, user_provi
   }
 
   return (
-    <div style={{ margin: "auto", width: "70vw" }}>
+    <div style={{ margin: "auto", width: "60vw" }}>
       <Card
         title={
           <div>

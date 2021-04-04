@@ -5,10 +5,10 @@ import { PageHeader } from "antd";
 
 export default function Header() {
   return (
-    <a href="https://github.com/austintgriffith/scaffold-eth" target="_blank" rel="noopener noreferrer">
+    <a href="/" rel="noopener noreferrer">
       <PageHeader
         title="Hackathon Muñon 3.0"
-        subTitle="decentralized and transparent hackathon on top of ethereum"
+        subTitle="decentralized hackathon on ethereum"
         style={{ cursor: "pointer" }}
       />
     </a>

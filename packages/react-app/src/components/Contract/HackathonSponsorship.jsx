@@ -44,7 +44,7 @@ export default function HackathonSponsorship({ contract, user_provider, id }) {
             paddingRight: 6,
             fontSize: 24,
           }}>
-          <h2>Sponsor this Hackathon</h2>
+          <h4>Sponsor this Hackathon</h4>
           <Form layout="vertical">
             <Form.Item label="Sponsorship (in eth)">
               <Input onChange={(e) => setHackathonSponsorship(e.target.value)} type="text" required={true} placeholder="e.g. 0.3"></Input>
