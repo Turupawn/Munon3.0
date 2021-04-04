@@ -8,6 +8,7 @@ import { Row, Col, Input, Divider, Tooltip, Button } from "antd";
 import { Transactor } from "../../helpers";
 import tryToDisplay from "./utils";
 import Blockies from "react-blockies";
+import { SyncOutlined } from '@ant-design/icons';
 const { utils } = require("ethers");
 const IPFS = require('ipfs-api');
 const ipfs = new IPFS({ host: 'ipfs.infura.io', port: 5001, protocol: 'https'});
@@ -55,7 +56,17 @@ export default function HackathonList({ contract, user_provider, select_hackatho
     </div>;
   }
 
-  return (hackathons.map(function(hackathon) {
-    return HackathonListElement(hackathon.id, hackathon.name, hackathon.image_hash);
-  }))
+  return <div>
+      {hackathons.length == 0 &&
+        <div style={{marginTop:8}}>
+          <SyncOutlined spin />Loading hackathons
+          <Divider />
+        </div>
+      }
+      {hackathons.length != 0 &&
+        (hackathons.map(function(hackathon) {
+          return HackathonListElement(hackathon.id, hackathon.name, hackathon.image_hash);
+        }))
+      }
+    </div>
 }

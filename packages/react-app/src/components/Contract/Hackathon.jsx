@@ -4,10 +4,14 @@
 import React, { useState } from "react";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexlify } from "@ethersproject/bytes";
-import { Row, Col, Input, Divider, Tooltip, Button } from "antd";
+import { Row, Col, Input, Divider, Tooltip, Button, List, Radio } from "antd";
 import { Transactor } from "../../helpers";
 import tryToDisplay from "./utils";
 import Blockies from "react-blockies";
+import { parseEther, formatEther } from "@ethersproject/units";
+import { SyncOutlined } from '@ant-design/icons';
+import Blockie from "../Blockie";
+import HackathonSponsorship from "./HackathonSponsorship";
 const { utils } = require("ethers");
 const IPFS = require('ipfs-api');
 const ipfs = new IPFS({ host: 'ipfs.infura.io', port: 5001, protocol: 'https'});
@@ -18,16 +22,18 @@ const HackathonFinished = 2
 
 export default function Hackathon({ contract, user_provider, id, select_hackathon_function }) {
   const [initializing_triggered, setInitializingTriggered] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [currentAddress, setCurrentAddress] = useState("");
   const [currentCurrentUserIsParticipant, setCurrentUserIsParticipant] = useState("false");
   const [hackathonName, setHackathonName] = useState("");
   const [hackathonImageHash, setHackathonImageHash] = useState("");
-  const [hackathonEntryFee, setHackathonEntryFee] = useState("");
+  const [hackathonEntryFee, setHackathonEntryFee] = useState(0);
   const [hackathonHostAddress, setHackathonHostAddress] = useState("");
   const [hackathonState, setHackathonState] = useState("");
-  const [hackathonPot, setHackathonPot] = useState("");
+  const [hackathonPot, setHackathonPot] = useState(0);
   const [participants, setParticipants] = useState([]);
   const [radioButtonRatings, setRadioButtonRatings] = useState([]);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
 
   const initHackathon = async (e) => {
     if(contract && !initializing_triggered)
@@ -39,13 +45,12 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
       if(currentAddress)
       {
         let hackathon = await contract.hackathons(id)
-        console.log(hackathon)
         setHackathonName(hackathon.name)
         setHackathonImageHash(hackathon.image_hash)
-        setHackathonEntryFee(parseInt(hackathon.entry_fee._hex))
+        setHackathonEntryFee(String(parseInt(hackathon.entry_fee._hex)))
         setHackathonHostAddress(hackathon.host_addr)
         setHackathonState(hackathon.state)
-        setHackathonPot(parseInt(hackathon.pot._hex))
+        setHackathonPot(String(parseInt(hackathon.pot._hex)))
 
         const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
         let participants = []
@@ -60,15 +65,20 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
                 points: parseInt(participant.points._hex),
                 current_user_rating: current_user_participant_rating
             })
-            radioButtonRatings.push(current_user_participant_rating)
+            if(!refreshLoading)
+            {
+              radioButtonRatings.push(current_user_participant_rating)
+            }
         }
         setParticipants(participants)
+        setParticipantsLoaded(true)
 
         const current_user_participation = await contract.hackathon_participants(id, currentAddress)
         if (parseInt(current_user_participation.addr) != 0)
           setCurrentUserIsParticipant(true)
         else
           setCurrentUserIsParticipant(false)
+        setRefreshLoading(false)
       }
     }
   }
@@ -78,10 +88,16 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
     select_hackathon_function(0)
   }
 
+  const handleRefreshClicked = async () => {
+    setRefreshLoading(true)
+    setInitializingTriggered(false)
+    initHackathon();
+  }
+
   const handleJoinHackathon = async (e) => {
     let user_signer = await user_provider.getSigner()
     contract=contract.connect(user_signer)
-    contract.join(id, { value: BigNumber.from(String(hackathonEntryFee)) })
+    contract.join(id, { value: hackathonEntryFee })
   }
 
   const handleCashout = async (e) => {
@@ -126,9 +142,50 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   function canFinish() { return isReviewEnabled() && currentUserIsHost(); }
   function canCashout() { return isFinished() && currentCurrentUserIsParticipant; }
 
-  return (
-    <div>
+  function renderParticipants()
+  {
+    return <div>
+      <h2>Participants</h2>
+      <List
+      itemLayout="vertical"
+      dataSource={participants}
+      renderItem={participant => (
+        <List.Item>
+          <List.Item.Meta
+            avatar={<Blockie address={participant.addr} size={8} scale={6} />}
+            title={participant.addr}
+          />
+            {isReviewEnabled() &&
+            <Radio.Group onChange={(e) => handleRadioButtonClick(participant.id, e)} defaultValue={radioButtonRatings[participant.id]}>
+              <Radio value={0}>0</Radio>
+              <Radio value={1}>1</Radio>
+              <Radio value={2}>2</Radio>
+              <Radio value={3}>3</Radio>
+              <Radio value={4}>4</Radio>
+              <Radio value={5}>5</Radio>
+              <div>
+                <Button onClick={(e) => handleSubmittRating(participant.id, participant.addr, e)}>
+                  Rate
+                </Button>
+              </div>
+            </Radio.Group>
+          }
+        </List.Item>
+      )}/>
+    </div>
+  }
+
+  function renderContract()
+  {
+    return <div>
       <Button onClick={(e) => handleBackClicked()}>Back</Button>
+      <Button onClick={(e) => handleRefreshClicked()}>Refresh</Button>
+      {refreshLoading &&
+        <div style={{marginTop:8}}>
+          <SyncOutlined spin />Refreshing
+          <Divider />
+        </div>
+      }
       <h1>{hackathonName}</h1>
       {isRegistrationOpen() &&
         <p>Registrations Open!</p>
@@ -140,8 +197,8 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
         <p>This event has finished</p>
       }
       <img width="200" src={"http://ipfs.io/ipfs/" + hackathonImageHash}></img>
-      <p>Pot: {hackathonPot}</p>
-      <p>Entry fee: {hackathonEntryFee}</p>
+      <p>Pot: {formatEther(hackathonPot)}</p>
+      <p>Entry fee: {formatEther(hackathonEntryFee)}</p>
       {canJoin() &&
         <Button onClick={(e) => handleJoinHackathon(e)}>Join Hackathon</Button>
       }
@@ -154,67 +211,32 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
       {canCashout() &&
         <Button onClick={(e) => handleCashout(e)}>Cashout</Button>
       }
-      <ul>
-      <h2>Participants</h2>
-      {participants.map(function(participant) {
-        return <li key={ participant.addr }>
-          { participant.addr }
-          {isReviewEnabled() &&
-            <div>
-              <div>
-                <input type="radio"
-                label="0"
-                my={2}
-                value={0}
-                checked={radioButtonRatings[participant.id] === 0}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-                <input type="radio"
-                label="1"
-                my={2}
-                value={1}
-                checked={radioButtonRatings[participant.id] === 1}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-                <input type="radio"
-                label="2"
-                my={2}
-                value={2}
-                checked={radioButtonRatings[participant.id] === 2}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-                <input type="radio"
-                label="3"
-                my={2}
-                value={3}
-                checked={radioButtonRatings[participant.id] === 3}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-                <input type="radio"
-                label="4"
-                my={2}
-                value={4}
-                checked={radioButtonRatings[participant.id] === 4}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-                <input type="radio"
-                label="5"
-                my={2}
-                value={5}
-                checked={radioButtonRatings[participant.id] === 5}
-                onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                />
-              </div>
-              <div>
-                <Button onClick={(e) => handleSubmittRating(participant.id, participant.addr, e)}>
-                  Rate
-                </Button>
-              </div>
-            </div>
-          }
-        </li>;
-      })}
-      </ul>
+      {!participantsLoaded &&
+        <div style={{marginTop:8}}>
+          <SyncOutlined spin />Loading participants
+          <Divider />
+        </div>
+      }
+      {participantsLoaded &&
+        <div>
+          {renderParticipants()}
+          <Divider />
+        </div>
+      }
+      <HackathonSponsorship contract={contract} user_provider={user_provider} id={id}/>
+    </div>
+  }
+
+  return (
+    <div>
+      {hackathonName == "" &&
+        <div style={{marginTop:8}}>
+        <SyncOutlined spin />Loading hackathon
+      </div>
+      }
+      {hackathonName != "" &&
+        renderContract()
+      }
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default function Contract({ customContract, account, gasPrice, user_provi
         title={
           <div>
             {name}
-            <div style={{ float: "right" }}>
+            <div>
               <Account
                 address={address}
                 localProvider={provider}
