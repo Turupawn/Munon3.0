@@ -16,7 +16,7 @@ const HackathonRegistrationOpen = 0
 const HackathonReviewEnabled = 1
 const HackathonFinished = 2
 
-export default function Hackathon({ contract, user_provider, id }) {
+export default function Hackathon({ contract, user_provider, id, select_hackathon_function }) {
   const [initializing_triggered, setInitializingTriggered] = useState(false);
   const [currentAddress, setCurrentAddress] = useState("");
   const [currentCurrentUserIsParticipant, setCurrentUserIsParticipant] = useState("false");
@@ -72,6 +72,11 @@ export default function Hackathon({ contract, user_provider, id }) {
       }
     }
   }
+  initHackathon();
+
+  const handleBackClicked = async () => {
+    select_hackathon_function(0)
+  }
 
   const handleJoinHackathon = async (e) => {
     let user_signer = await user_provider.getSigner()
@@ -98,7 +103,6 @@ export default function Hackathon({ contract, user_provider, id }) {
   }
 
   const handleSubmittRating = async (participant_id, participant_address, e) => {
-    //const tx = await hackathon_munon.instance.rate(id, participant_address, radio_button_ratings[participant_id])
     let user_signer = await user_provider.getSigner()
     contract=contract.connect(user_signer)
     contract.rate(id, participant_address, radioButtonRatings[participant_id])
@@ -122,96 +126,95 @@ export default function Hackathon({ contract, user_provider, id }) {
   function canFinish() { return isReviewEnabled() && currentUserIsHost(); }
   function canCashout() { return isFinished() && currentCurrentUserIsParticipant; }
 
-  initHackathon();
-
   return (
-<div>
-    <h1>{hackathonName}</h1>
-    {isRegistrationOpen() &&
+    <div>
+      <Button onClick={(e) => handleBackClicked()}>Back</Button>
+      <h1>{hackathonName}</h1>
+      {isRegistrationOpen() &&
         <p>Registrations Open!</p>
-    }
-    {isReviewEnabled() &&
+      }
+      {isReviewEnabled() &&
         <p>Reviews are now happening</p>
-    }
-    {isFinished() &&
+      }
+      {isFinished() &&
         <p>This event has finished</p>
-    }
-    <img width="200" src={"http://ipfs.io/ipfs/" + hackathonImageHash}></img>
-    <p>Pot: {hackathonPot}</p>
-    <p>Entry fee: {hackathonEntryFee}</p>
-    {canJoin() &&
+      }
+      <img width="200" src={"http://ipfs.io/ipfs/" + hackathonImageHash}></img>
+      <p>Pot: {hackathonPot}</p>
+      <p>Entry fee: {hackathonEntryFee}</p>
+      {canJoin() &&
         <Button onClick={(e) => handleJoinHackathon(e)}>Join Hackathon</Button>
-    }
-    {canEnableReview() &&
+      }
+      {canEnableReview() &&
         <Button onClick={(e) => handleEnableReview(e)}>Enable Review</Button>
-    }
-    {canFinish() &&
+      }
+      {canFinish() &&
         <Button onClick={(e) => handleFinish(e)}>Finish</Button>
-    }
-    {canCashout() &&
+      }
+      {canCashout() &&
         <Button onClick={(e) => handleCashout(e)}>Cashout</Button>
-    }
-    <ul>
-    <h2>Participants</h2>
-    {participants.map(function(participant) {
+      }
+      <ul>
+      <h2>Participants</h2>
+      {participants.map(function(participant) {
         return <li key={ participant.addr }>
-            { participant.addr } 
-            {isReviewEnabled() &&
-                <div>
-                    <div>
-                      <input type="radio"
-                        label="0"
-                        my={2}
-                        value={0}
-                        checked={radioButtonRatings[participant.id] === 0}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                        <input type="radio"
-                        label="1"
-                        my={2}
-                        value={1}
-                        checked={radioButtonRatings[participant.id] === 1}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                        <input type="radio"
-                        label="2"
-                        my={2}
-                        value={2}
-                        checked={radioButtonRatings[participant.id] === 2}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                        <input type="radio"
-                        label="3"
-                        my={2}
-                        value={3}
-                        checked={radioButtonRatings[participant.id] === 3}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                        <input type="radio"
-                        label="4"
-                        my={2}
-                        value={4}
-                        checked={radioButtonRatings[participant.id] === 4}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                        <input type="radio"
-                        label="5"
-                        my={2}
-                        value={5}
-                        checked={radioButtonRatings[participant.id] === 5}
-                        onChange={(e) => handleRadioButtonClick(participant.id, e)}
-                        />
-                    </div>
-                    <div>
-                        <Button onClick={(e) => handleSubmittRating(participant.id, participant.addr, e)}>
-                            Rate
-                        </Button>
-                    </div>
-                </div>
-            }
+          { participant.addr }
+          {isReviewEnabled() &&
+            <div>
+              <div>
+                <input type="radio"
+                label="0"
+                my={2}
+                value={0}
+                checked={radioButtonRatings[participant.id] === 0}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+                <input type="radio"
+                label="1"
+                my={2}
+                value={1}
+                checked={radioButtonRatings[participant.id] === 1}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+                <input type="radio"
+                label="2"
+                my={2}
+                value={2}
+                checked={radioButtonRatings[participant.id] === 2}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+                <input type="radio"
+                label="3"
+                my={2}
+                value={3}
+                checked={radioButtonRatings[participant.id] === 3}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+                <input type="radio"
+                label="4"
+                my={2}
+                value={4}
+                checked={radioButtonRatings[participant.id] === 4}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+                <input type="radio"
+                label="5"
+                my={2}
+                value={5}
+                checked={radioButtonRatings[participant.id] === 5}
+                onChange={(e) => handleRadioButtonClick(participant.id, e)}
+                />
+              </div>
+              <div>
+                <Button onClick={(e) => handleSubmittRating(participant.id, participant.addr, e)}>
+                  Rate
+                </Button>
+              </div>
+            </div>
+          }
         </li>;
-    })}
-    </ul>
-</div>
+      })}
+      </ul>
+    </div>
   );
 }

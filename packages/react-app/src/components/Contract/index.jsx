@@ -10,8 +10,6 @@ import CreateHackathon from "./CreateHackathon";
 import Hackathon from "./Hackathon";
 import HackathonList from "./HackathonList";
 
-const isQueryable = fn => (fn.stateMutability === "view" || fn.stateMutability === "pure") && fn.inputs.length === 0;
-
 export default function Contract({ customContract, account, gasPrice, user_provider, signer, provider, name, show, price, blockExplorer, current_view }) {
 
   const contracts = useContractLoader(provider);
@@ -26,6 +24,11 @@ export default function Contract({ customContract, account, gasPrice, user_provi
   const address = contract ? contract.address : "";
   const contractIsDeployed = useContractExistsAtAddress(provider, address);
   const [contract_loaded, setContractLoaded] = useState(false);
+  const [currentHackathon, setCurrentHackathon] = useState(0);
+
+  const handleSelectHackathon = async (hackathon_id) => {
+    setCurrentHackathon(hackathon_id)
+  }
 
   return (
     <div style={{ margin: "auto", width: "70vw" }}>
@@ -50,14 +53,14 @@ export default function Contract({ customContract, account, gasPrice, user_provi
         style={{ marginTop: 25, width: "100%" }}
         loading={!contractIsDeployed}
       >
-        { current_view == "home" &&
+        { currentHackathon == 0 &&
           <div>
-            <HackathonList contract={contract} user_provider={user_provider}/>
+            <HackathonList contract={contract} user_provider={user_provider} select_hackathon_function={handleSelectHackathon} />
             <CreateHackathon contract={contract} user_provider={user_provider}/>
           </div>
         }
-        { current_view == "hackathon" &&
-          <Hackathon contract={contract} user_provider={user_provider} id={id}/>
+        { currentHackathon != 0 &&
+          <Hackathon contract={contract} user_provider={user_provider} id={currentHackathon} select_hackathon_function={handleSelectHackathon}/>
         }
       </Card>
     </div>

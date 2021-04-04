@@ -13,7 +13,7 @@ const IPFS = require('ipfs-api');
 const ipfs = new IPFS({ host: 'ipfs.infura.io', port: 5001, protocol: 'https'});
 
 
-export default function HackathonList({ contract, user_provider }) {
+export default function HackathonList({ contract, user_provider, select_hackathon_function }) {
   const [initializing_triggered, setInitializingTriggered] = useState(false);
   const [hackathons, setHackathons] = useState([]);
 
@@ -25,7 +25,7 @@ export default function HackathonList({ contract, user_provider }) {
       console.log("Really initializing hackathon list...")
       const hackathon_count = parseInt((await contract.hackathon_count())._hex)
       let hackathons = []
-      for (let i = 1; i <= hackathon_count; i++) {
+      for (let i = hackathon_count; i >= 1; i--) {
         const hackathon = await contract.hackathons(i)
         hackathons.push(
           {
@@ -42,12 +42,15 @@ export default function HackathonList({ contract, user_provider }) {
   }
   initHackathonList()
 
-  function HackathonListElement(idd, _name, image_hash) {
-    return <div style={{ margin: 2 }} key={idd}>
-      <h2>{idd}</h2>
-      <h2>{_name}</h2>
-      <h2>{image_hash}</h2>
-      <a href={ "/hackathons/" + idd}>Go to hackathon</a>
+  const handleSelectHackathonClicked = async (id) => {
+    select_hackathon_function(id)
+  }
+
+  function HackathonListElement(id, name, image_hash) {
+    return <div style={{ margin: 2 }} key={id}>
+      <h2>{name}</h2>
+      <img width="200" src={"http://ipfs.io/ipfs/" + image_hash}></img><br/>
+      <Button onClick={(e) => handleSelectHackathonClicked(id)}>Go to hackathon</Button>
       <Divider />
     </div>;
   }
