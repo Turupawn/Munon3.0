@@ -30,45 +30,40 @@ export default function Hackathon({ contract, user_provider, id }) {
   const [radioButtonRatings, setRadioButtonRatings] = useState([]);
 
   const initHackathon = async (e) => {
-    console.log("Initializing...")
     if(contract && !initializing_triggered)
     {
+      console.log("Initializing...")
       let current_signer = await user_provider.getSigner()
       setCurrentAddress(await current_signer.getAddress())
-      console.log("Really initializing...")
-      console.log(user_provider)
-      console.log(currentAddress)
-      console.log(currentAddress)
-      console.log(currentAddress)
       setInitializingTriggered(true)
-      let hackathon = await contract.hackathons(id)
-      console.log(hackathon)
-      setHackathonName(hackathon.name)
-      setHackathonImageHash(hackathon.image_hash)
-      setHackathonEntryFee(parseInt(hackathon.entry_fee._hex))
-      setHackathonHostAddress(hackathon.host_addr)
-      setHackathonState(hackathon.state)
-      setHackathonPot(parseInt(hackathon.pot._hex))
-
-      const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
-      let participants = []
-      for (let i = 0; i < participants_count; i++) {
-          const participant_address = await contract.hackathon_participant_addresses(id, i)
-          const participant = await contract.hackathon_participants(id,participant_address)
-          const current_user_participant_rating = parseInt((await contract.participant_ratings(id, currentAddress, participant_address))._hex)
-          participants.push(
-          {
-              id: i,
-              addr: participant.addr,
-              points: parseInt(participant.points._hex),
-              current_user_rating: current_user_participant_rating
-          })
-          radioButtonRatings.push(current_user_participant_rating)
-      }
-      setParticipants(participants)
-      
       if(currentAddress)
       {
+        let hackathon = await contract.hackathons(id)
+        console.log(hackathon)
+        setHackathonName(hackathon.name)
+        setHackathonImageHash(hackathon.image_hash)
+        setHackathonEntryFee(parseInt(hackathon.entry_fee._hex))
+        setHackathonHostAddress(hackathon.host_addr)
+        setHackathonState(hackathon.state)
+        setHackathonPot(parseInt(hackathon.pot._hex))
+
+        const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
+        let participants = []
+        for (let i = 0; i < participants_count; i++) {
+            const participant_address = await contract.hackathon_participant_addresses(id, i)
+            const participant = await contract.hackathon_participants(id,participant_address)
+            const current_user_participant_rating = parseInt((await contract.participant_ratings(id, currentAddress, participant_address))._hex)
+            participants.push(
+            {
+                id: i,
+                addr: participant.addr,
+                points: parseInt(participant.points._hex),
+                current_user_rating: current_user_participant_rating
+            })
+            radioButtonRatings.push(current_user_participant_rating)
+        }
+        setParticipants(participants)
+
         const current_user_participation = await contract.hackathon_participants(id, currentAddress)
         if (parseInt(current_user_participation.addr) != 0)
           setCurrentUserIsParticipant(true)
@@ -79,23 +74,34 @@ export default function Hackathon({ contract, user_provider, id }) {
   }
 
   const handleJoinHackathon = async (e) => {
-    //const tx = await hackathon_munon.instance.join(id, { value: BigNumber.from(String(entry_fee)) })
+    let user_signer = await user_provider.getSigner()
+    contract=contract.connect(user_signer)
+    contract.join(id, { value: BigNumber.from(String(hackathonEntryFee)) })
   }
 
   const handleCashout = async (e) => {
-    //const tx = await hackathon_munon.instance.cashOut(id)
+    let user_signer = await user_provider.getSigner()
+    contract=contract.connect(user_signer)
+    contract.cashOut(id)
   }
 
   const handleEnableReview = async (e) => {
-    //const tx = await hackathon_munon.instance.enableHackathonReview(id)
+    let user_signer = await user_provider.getSigner()
+    contract=contract.connect(user_signer)
+    contract.enableHackathonReview(id)
   }
 
   const handleFinish = async (e) => {
-    //const tx = await hackathon_munon.instance.finishHackathon(id)
+    let user_signer = await user_provider.getSigner()
+    contract=contract.connect(user_signer)
+    contract.finishHackathon(id)
   }
 
   const handleSubmittRating = async (participant_id, participant_address, e) => {
     //const tx = await hackathon_munon.instance.rate(id, participant_address, radio_button_ratings[participant_id])
+    let user_signer = await user_provider.getSigner()
+    contract=contract.connect(user_signer)
+    contract.rate(id, participant_address, radioButtonRatings[participant_id])
   };
 
   const handleRadioButtonClick = (participant_id, e) => {
