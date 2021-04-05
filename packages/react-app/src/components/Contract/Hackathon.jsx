@@ -34,6 +34,7 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   const [participants, setParticipants] = useState([]);
   const [radioButtonRatings, setRadioButtonRatings] = useState([]);
   const [participantsLoaded, setParticipantsLoaded] = useState(false);
+  const [totalPoints, setTotalPoints] = useState(0);
 
   const initHackathon = async (e) => {
     if(contract && !initializing_triggered)
@@ -54,6 +55,7 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
 
         const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
         let participants = []
+        let total_points = 0
         for (let i = 0; i < participants_count; i++) {
             const participant_address = await contract.hackathon_participant_addresses(id, i)
             const participant = await contract.hackathon_participants(id,participant_address)
@@ -69,9 +71,11 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
             {
               radioButtonRatings.push(current_user_participant_rating)
             }
+            total_points += parseInt(participant.points._hex)
         }
         setParticipants(participants)
         setParticipantsLoaded(true)
+        setTotalPoints(total_points)
 
         const current_user_participation = await contract.hackathon_participants(id, currentAddress)
         if (parseInt(current_user_participation.addr) != 0)
@@ -142,6 +146,15 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   function canFinish() { return isReviewEnabled() && currentUserIsHost(); }
   function canCashout() { return isFinished() && currentCurrentUserIsParticipant; }
 
+  function getParticipantDescription(ratings, points)
+  {
+    let result = ""
+    if(currentCurrentUserIsParticipant)
+      result += "You gave this participant " + ratings + " points. "
+    result += "Total points: " + points + ". (" + (points*100/totalPoints) + "%)"
+    return result
+  }
+
   function renderParticipants()
   {
     return <div>
@@ -154,8 +167,9 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
           <List.Item.Meta
             avatar={<Blockie address={participant.addr} size={8} scale={6} />}
             title={participant.addr}
+            description={getParticipantDescription(participant.current_user_rating, participant.points)}
           />
-            {isReviewEnabled() &&
+            {currentCurrentUserIsParticipant && isReviewEnabled() &&
             <Radio.Group onChange={(e) => handleRadioButtonClick(participant.id, e)} defaultValue={radioButtonRatings[participant.id]}>
               <Radio value={0}>0</Radio>
               <Radio value={1}>1</Radio>
@@ -167,9 +181,11 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
           }
         </List.Item>
       )}/>
-      <Button onClick={(e) => handleSubmittRating(e)}>
-        Rate all participants
-      </Button>
+      {currentCurrentUserIsParticipant &&
+        <Button onClick={(e) => handleSubmittRating(e)}>
+          Rate all participants
+        </Button>
+      }
     </div>
   }
 
@@ -195,8 +211,8 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
         <p>This event has finished</p>
       }
       <img width="200" src={"http://ipfs.io/ipfs/" + hackathonImageHash}></img>
-      <p>Pot: {formatEther(hackathonPot)}</p>
-      <p>Entry fee: {formatEther(hackathonEntryFee)}</p>
+      <p>Pot: {formatEther(hackathonPot)} ether</p>
+      <p>Entry fee: {formatEther(hackathonEntryFee)} ether</p>
       {canJoin() &&
         <Button onClick={(e) => handleJoinHackathon(e)}>Join Hackathon</Button>
       }
