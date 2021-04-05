@@ -151,7 +151,9 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
     let result = ""
     if(currentCurrentUserIsParticipant)
       result += "You gave this participant " + ratings + " points. "
-    result += "Total points: " + points + ". (" + (points*100/totalPoints) + "%)"
+    result += "Total points: " + points + ". "
+    if(totalPoints != 0)
+      result += "(" + (points*100/totalPoints) + "%)"
     return result
   }
 
@@ -181,7 +183,7 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
           }
         </List.Item>
       )}/>
-      {currentCurrentUserIsParticipant &&
+      {currentCurrentUserIsParticipant && isReviewEnabled() &&
         <Button onClick={(e) => handleSubmittRating(e)}>
           Rate all participants
         </Button>
