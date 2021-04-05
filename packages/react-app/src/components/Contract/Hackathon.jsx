@@ -149,11 +149,13 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   function getParticipantDescription(ratings, points)
   {
     let result = ""
+    if(isRegistrationOpen())
+      return ""
     if(currentCurrentUserIsParticipant)
       result += "You gave this participant " + ratings + " points. "
     result += "Total points: " + points + ". "
     if(totalPoints != 0)
-      result += "(" + (points*100/totalPoints) + "%)"
+      result += "(" + Math.round(points*100*100/totalPoints)/ 100 + "%)"
     return result
   }
 
