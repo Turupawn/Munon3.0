@@ -1,7 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "contracts/SafeMath.sol";
-
 contract HackathonMunon
 {
   // Events
@@ -50,8 +48,7 @@ contract HackathonMunon
   (
     uint256 hackathon_id
   );
-
-  using SafeMath for uint256;
+  
   // Structs
   struct Hackathon
   {
@@ -176,7 +173,7 @@ contract HackathonMunon
     Participant memory participant = Participant(msg.sender, 0);
     hackathon_participants[hackathon_id][msg.sender] = participant;
     hackathon_participant_addresses[hackathon_id].push(msg.sender);
-    hackathons[hackathon_id].pot = hackathons[hackathon_id].pot.add(hackathons[hackathon_id].entry_fee);
+    hackathons[hackathon_id].pot += hackathons[hackathon_id].entry_fee;
     emit Registration(hackathon_id, msg.sender);
   }
 
@@ -184,7 +181,7 @@ contract HackathonMunon
     uint256 hackathon_id
   ) public payable isNotFinished(hackathon_id)
   {
-    hackathons[hackathon_id].pot = hackathons[hackathon_id].pot.add(msg.value);
+    hackathons[hackathon_id].pot += msg.value;
     emit SponsorshipSubmited(hackathon_id, msg.value);
   }
 
@@ -196,9 +193,8 @@ contract HackathonMunon
     for (uint i=0; i<hackathon_participant_addresses[hackathon_id].length; i++) {
         address reviewed_address = hackathon_participant_addresses[hackathon_id][i];
         uint256 rating_stored = participant_ratings[hackathon_id][msg.sender][reviewed_address];
-        hackathon_participants[hackathon_id][reviewed_address].points = hackathon_participants[hackathon_id][reviewed_address].points.add(
-          points[i]).sub(rating_stored);
-        total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id].add(points[i]).sub(rating_stored);
+        hackathon_participants[hackathon_id][reviewed_address].points = hackathon_participants[hackathon_id][reviewed_address].points + points[i] - rating_stored;
+        total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id] + points[i] - rating_stored;
         participant_ratings[hackathon_id][msg.sender][reviewed_address] = points[i];
     }
     emit RateAllSubmited(hackathon_id, msg.sender, points);
@@ -212,7 +208,7 @@ contract HackathonMunon
 
     // Calculate reward
     uint256 pot = hackathons[hackathon_id].pot;
-    uint256 my_reward = pot.mul(my_points).div(total_points);
+    uint256 my_reward = pot * my_points / total_points;
 
     payable(msg.sender).transfer(my_reward);
     participant_has_cashed_out[hackathon_id][msg.sender] = true;
