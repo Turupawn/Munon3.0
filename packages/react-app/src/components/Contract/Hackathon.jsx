@@ -32,6 +32,7 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   const [hackathonState, setHackathonState] = useState("");
   const [hackathonPot, setHackathonPot] = useState(0);
   const [participants, setParticipants] = useState([]);
+  const [metrics, setMetrics] = useState([]);
   const [radioButtonRatings, setRadioButtonRatings] = useState([]);
   const [participantsLoaded, setParticipantsLoaded] = useState(false);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -53,24 +54,43 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
         setHackathonState(hackathon.state)
         setHackathonPot(String(parseInt(hackathon.pot._hex)))
 
+        const metric_count = parseInt(await (await contract.getMetricCount(id))._hex)
+        let metrics = []
+        for (let i = 0; i < metric_count; i++) {
+            const metric = await contract.hackathon_metrics(id, i)
+            metrics.push(metric);
+        }
+        setMetrics(metrics)
+
         const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
         let participants = []
         let total_points = 0
         for (let i = 0; i < participants_count; i++) {
             const participant_address = await contract.hackathon_participant_addresses(id, i)
             const participant = await contract.hackathon_participants(id,participant_address)
-            const current_user_participant_rating = parseInt((await contract.participant_ratings(id, currentAddress, participant_address))._hex)
+
+            let reviews = []
+            let ratings_sum = 0;
+            for (let review_iterator = 0; review_iterator < metric_count; review_iterator++)
+            {
+              let rating = parseInt((await contract.participant_ratings(id, currentAddress, participant_address, review_iterator))._hex)
+              ratings_sum += rating
+              reviews[review_iterator] = rating
+            }
+            console.log(reviews)
+
+            if(!refreshLoading)
+            {
+              radioButtonRatings.push(reviews)
+            }
+
             participants.push(
             {
                 id: i,
                 addr: participant.addr,
                 points: parseInt(participant.points._hex),
-                current_user_rating: current_user_participant_rating
+                current_user_rating: ratings_sum
             })
-            if(!refreshLoading)
-            {
-              radioButtonRatings.push(current_user_participant_rating)
-            }
             total_points += parseInt(participant.points._hex)
         }
         setParticipants(participants)
@@ -125,14 +145,19 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   const handleSubmittRating = async (e) => {
     let user_signer = await user_provider.getSigner()
     contract=contract.connect(user_signer)
+    console.log(radioButtonRatings)
     contract.rateAll(id, radioButtonRatings)
   };
 
-  const handleRadioButtonClick = (participant_id, e) => {
+  const handleRadioButtonClick = (participant_id, metric_id, e) => {
     let radioButtonRatingsTemp = [...radioButtonRatings];
     radioButtonRatings.map((data,index) => {
       if(index == participant_id)
-      radioButtonRatingsTemp[index] = parseInt(e.target.value);
+      {
+        let temp = radioButtonRatingsTemp[index];
+        temp[metric_id] = parseInt(e.target.value);
+        radioButtonRatingsTemp[index] = temp;
+      }
     });
     setRadioButtonRatings(radioButtonRatingsTemp);
   };
@@ -159,6 +184,23 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
     return result
   }
 
+  function renderMetrics(participant)
+  {
+    return metrics.map((metric, metric_index) =>
+      <div>
+        <h2>{metric}</h2>
+        <Radio.Group onChange={(e) => handleRadioButtonClick(participant.id, metric_index, e)} defaultValue={radioButtonRatings[participant.id][metric_index]}>
+                <Radio value={0}>0</Radio>
+                <Radio value={1}>1</Radio>
+                <Radio value={2}>2</Radio>
+                <Radio value={3}>3</Radio>
+                <Radio value={4}>4</Radio>
+                <Radio value={5}>5</Radio>
+              </Radio.Group>
+      </div>
+    )
+  }
+
   function renderParticipants()
   {
     return <div>
@@ -174,14 +216,7 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
             description={getParticipantDescription(participant.current_user_rating, participant.points)}
           />
             {currentCurrentUserIsParticipant && isReviewEnabled() &&
-            <Radio.Group onChange={(e) => handleRadioButtonClick(participant.id, e)} defaultValue={radioButtonRatings[participant.id]}>
-              <Radio value={0}>0</Radio>
-              <Radio value={1}>1</Radio>
-              <Radio value={2}>2</Radio>
-              <Radio value={3}>3</Radio>
-              <Radio value={4}>4</Radio>
-              <Radio value={5}>5</Radio>
-            </Radio.Group>
+            renderMetrics(participant)
           }
         </List.Item>
       )}/>

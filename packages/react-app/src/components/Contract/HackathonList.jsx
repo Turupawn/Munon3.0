@@ -60,6 +60,7 @@ export default function HackathonList({ contract, user_provider, select_hackatho
   }
 
   return <div>
+      <h1>Ongoing Hackathons</h1>
       {!hackathonsLoaded &&
         <div style={{marginTop:8}}>
           <SyncOutlined spin />Loading hackathons

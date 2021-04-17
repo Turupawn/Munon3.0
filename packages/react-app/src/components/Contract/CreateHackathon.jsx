@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexlify } from "@ethersproject/bytes";
-import { Row, Col, Input, Divider, Form, Button, Checkbox, Upload } from "antd";
+import { Row, Col, Input, Divider, Form, Button, Checkbox, Upload, Table } from "antd";
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { Transactor } from "../../helpers";
 import tryToDisplay from "./utils";
@@ -22,10 +22,25 @@ const tailLayout = {
   wrapperCol: { offset: 1, span: 23 },
 };
 
+const columns = [
+  {
+    title: 'Metric name',
+    dataIndex: 'name',
+    key: 'name',
+  }
+];
+
 export default function CreateHackathon({ contract, user_provider }) {
   const [hackathonName, setHackathonName] = useState("");
   const [hackathonEntryFee, setHackathonEntryFee] = useState("");
+  const [hackathonMetric, setHackathonMetric] = useState("");
+  const [hackathonMetrics, setHackathonMetrics] = useState([]);
   const [image_buffer, setImageBuffer] = useState(null);
+
+  const onHandleAddMetric = async () => {
+    setHackathonMetrics([...hackathonMetrics, {name: hackathonMetric, key: hackathonMetric}])
+    setHackathonMetric("")
+  }
 
   const onHandleCreateHackathon = async () => {
     if(contract)
@@ -36,11 +51,15 @@ export default function CreateHackathon({ contract, user_provider }) {
         if(error) {
           console.log(error);
           return;
-        }  
-
+        }
         let ipfs_image_hash = result[0].hash
         let entry_fee_wei = parseEther(hackathonEntryFee)
-        contract.createHackathon(hackathonName, ipfs_image_hash, BigNumber.from(entry_fee_wei))
+
+        let metrics=[]
+        for(let i=0; i<hackathonMetrics.length; i++)
+          metrics[i] = hackathonMetrics[i].name
+
+        contract.createHackathon(hackathonName, ipfs_image_hash, BigNumber.from(entry_fee_wei), metrics)
       });
     }
   }
@@ -83,6 +102,11 @@ export default function CreateHackathon({ contract, user_provider }) {
               <Upload name="logo" action="#" listType="picture">
                 <Button icon={<UploadOutlined />}>Click to upload</Button>
               </Upload>
+            </Form.Item>
+            <Form.Item label="Metrics">
+              <Input value={hackathonMetric} onChange={(e) => setHackathonMetric(e.target.value)} type="text" required={true} placeholder="e.g. Coolness, Freshness"></Input>
+              <Button onClick={onHandleAddMetric}>Add Metric</Button>
+              <Table dataSource={hackathonMetrics} columns={columns}/>
             </Form.Item>
           </Form>
           <Button type="primary" onClick={onHandleCreateHackathon}>Create Hackathon</Button>

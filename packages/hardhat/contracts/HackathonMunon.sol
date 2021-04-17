@@ -48,7 +48,7 @@ contract HackathonMunon
   (
     uint256 hackathon_id
   );
-  
+
   // Structs
   struct Hackathon
   {
@@ -75,8 +75,9 @@ contract HackathonMunon
   mapping(uint256 => Hackathon) public hackathons; // Stores hackathons data
   mapping(uint256 => mapping(address => Participant)) public hackathon_participants; // Stores participant data
   mapping(uint256 => address[]) public hackathon_participant_addresses; // Stores participant addresses
+  mapping(uint256 => string[]) public hackathon_metrics; // Stores the metrics
   // Rating history, enables correcting ratings and prevents rating
-  mapping(uint256 => mapping(address => mapping(address => uint256))) public participant_ratings;
+  mapping(uint256 => mapping(address => mapping(address => mapping(uint256 => uint256)))) public participant_ratings;
   uint256 public hackathon_count; // Helps generating a new hackathon id
   mapping(uint256 => mapping(address => bool)) public participant_has_cashed_out; // Helps preventing double cash out
   mapping(uint256 => uint256) public total_hackathon_points; // Helps calculating pot splits
@@ -100,12 +101,17 @@ contract HackathonMunon
     _;
   }
 
-  modifier pointsAreValid(uint256[] memory points, uint256 hackathon_id)
+  modifier pointsAreValid(uint256[][] memory points, uint256 hackathon_id)
   {
-    for (uint i=0; i<hackathon_participant_addresses[hackathon_id].length; i++) {
-      require(points[i] <= 5, "A submited review has points greater than 5");
+    require(points.length == getParticipantCount(hackathon_id), "Amount of reviews submitted doesnt't match hackathon participant count.");
+    for (uint participant_iterator=0; participant_iterator<points.length; participant_iterator++)
+    {
+      require(points[participant_iterator].length == getMetricCount(hackathon_id), "Amount of metrics submitted doesnt't match hackathon metric count.");
+      for (uint metric_iterator=0; metric_iterator<points[participant_iterator].length; metric_iterator++)
+      {
+        require(points[participant_iterator][metric_iterator] <= 5, "A submited review has points greater than 5");
+      }
     }
-    require(points.length == getParticipantCount(hackathon_id), "Amount of reviews submitted doesnt't match hackathon participant count");
     _;
   }
 
@@ -158,11 +164,12 @@ contract HackathonMunon
   }
 
   // Public methods
-  function createHackathon(string memory _name, string memory image_hash, uint256 _entry_fee) public
+  function createHackathon(string memory _name, string memory image_hash, uint256 _entry_fee, string[] memory metrics) public
   {
     hackathon_count += 1;
     uint256 date_now = block.timestamp;
     hackathons[hackathon_count] = Hackathon(msg.sender, HackathonState.RegistrationOpen, _name, image_hash, _entry_fee, 0, date_now, date_now);
+    hackathon_metrics[hackathon_count] = metrics;
     emit HackathonCreation(msg.sender, hackathon_count, _name, image_hash, _entry_fee, date_now);
   }
 
@@ -187,17 +194,20 @@ contract HackathonMunon
 
   function rateAll(
     uint256 hackathon_id,
-    uint256[] memory points
+    uint256[][] memory points
   ) public hasJoined(hackathon_id) pointsAreValid(points, hackathon_id) isReviewEnabled(hackathon_id)
   {
-    for (uint i=0; i<hackathon_participant_addresses[hackathon_id].length; i++) {
-        address reviewed_address = hackathon_participant_addresses[hackathon_id][i];
-        uint256 rating_stored = participant_ratings[hackathon_id][msg.sender][reviewed_address];
-        hackathon_participants[hackathon_id][reviewed_address].points = hackathon_participants[hackathon_id][reviewed_address].points + points[i] - rating_stored;
-        total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id] + points[i] - rating_stored;
-        participant_ratings[hackathon_id][msg.sender][reviewed_address] = points[i];
+    for (uint current_participant=0; current_participant<hackathon_participant_addresses[hackathon_id].length; current_participant++) {
+        address reviewed_address = hackathon_participant_addresses[hackathon_id][current_participant];
+        for (uint current_metric=0; current_metric<points[current_participant].length; current_metric++)
+        {
+          uint256 rating_stored = participant_ratings[hackathon_id][msg.sender][reviewed_address][current_metric];
+          hackathon_participants[hackathon_id][reviewed_address].points = hackathon_participants[hackathon_id][reviewed_address].points + points[current_participant][current_metric] - rating_stored;
+          total_hackathon_points[hackathon_id] = total_hackathon_points[hackathon_id] + points[current_participant][current_metric] - rating_stored;
+          participant_ratings[hackathon_id][msg.sender][reviewed_address][current_metric] = points[current_participant][current_metric];
+        }
     }
-    emit RateAllSubmited(hackathon_id, msg.sender, points);
+    //emit RateAllSubmited(hackathon_id, msg.sender, points);
   }
 
   function cashOut(uint256 hackathon_id)
@@ -244,6 +254,10 @@ contract HackathonMunon
   // View methods
   function getParticipantCount(uint256 hackathon_id) public view returns(uint participant_count) {
     return hackathon_participant_addresses[hackathon_id].length;
+  }
+
+  function getMetricCount(uint256 hackathon_id) public view returns(uint metrics_count) {
+    return hackathon_metrics[hackathon_id].length;
   }
 
   fallback () external payable {
