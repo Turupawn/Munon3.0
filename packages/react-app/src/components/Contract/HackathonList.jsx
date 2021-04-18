@@ -26,9 +26,13 @@ export default function HackathonList({ contract, user_provider, select_hackatho
     {
       setInitializingTriggered(true)
       console.log("Really initializing hackathon list...")
+      let user_signer = await user_provider.getSigner()
+      contract=contract.connect(user_signer)
+
       const hackathon_count = parseInt((await contract.hackathon_count())._hex)
       let hackathons = []
-      for (let i = hackathon_count; i >= 1; i--) {
+      console.log(hackathon_count)
+      for (let i = hackathon_count-0; i >= 1; i--) {
         const hackathon = await contract.hackathons(i)
         hackathons.push(
           {

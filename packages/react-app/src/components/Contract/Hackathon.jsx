@@ -40,7 +40,11 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
   const initHackathon = async (e) => {
     if(contract && !initializing_triggered)
     {
-      console.log("Initializing...")
+      console.log("Initializing hackathon...")
+      console.log("Really initializing hackathon list...")
+      let user_signer = await user_provider.getSigner()
+      contract=contract.connect(user_signer)
+
       let current_signer = await user_provider.getSigner()
       setCurrentAddress(await current_signer.getAddress())
       setInitializingTriggered(true)
