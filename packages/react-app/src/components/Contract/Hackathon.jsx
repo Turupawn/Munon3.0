@@ -58,24 +58,19 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
         setHackathonState(hackathon.state)
         setHackathonPot(String(parseInt(hackathon.pot._hex)))
 
-        const metric_count = parseInt(await (await contract.getMetricCount(id))._hex)
-        let metrics = []
-        for (let i = 0; i < metric_count; i++) {
-            const metric = await contract.hackathon_metrics(id, i)
-            metrics.push(metric);
-        }
-        setMetrics(metrics)
+        setMetrics(await contract.getMetrics(id));
 
         const participants_count = parseInt(await (await contract.getParticipantCount(id))._hex)
         let participants = []
         let total_points = 0
         for (let i = 0; i < participants_count; i++) {
-            const participant_address = await contract.hackathon_participant_addresses(id, i)
-            const participant = await contract.hackathon_participants(id,participant_address)
+            const participant_address = await contract.participant_addresses(id, i)
+
+            const participant_points = parseInt(await contract.participant_points(id,participant_address)._hex)
 
             let reviews = []
             let ratings_sum = 0;
-            for (let review_iterator = 0; review_iterator < metric_count; review_iterator++)
+            for (let review_iterator = 0; review_iterator < metrics.length; review_iterator++)
             {
               let rating = parseInt((await contract.participant_ratings(id, currentAddress, participant_address, review_iterator))._hex)
               ratings_sum += rating
@@ -91,21 +86,19 @@ export default function Hackathon({ contract, user_provider, id, select_hackatho
             participants.push(
             {
                 id: i,
-                addr: participant.addr,
-                points: parseInt(participant.points._hex),
+                addr: participant_address,
+                points: participant_points,
                 current_user_rating: ratings_sum
             })
-            total_points += parseInt(participant.points._hex)
+            total_points += participant_points
         }
         setParticipants(participants)
         setParticipantsLoaded(true)
         setTotalPoints(total_points)
 
-        const current_user_participation = await contract.hackathon_participants(id, currentAddress)
-        if (parseInt(current_user_participation.addr) != 0)
-          setCurrentUserIsParticipant(true)
-        else
-          setCurrentUserIsParticipant(false)
+        const participant_has_joined = await contract.participant_has_joined(id, currentAddress)
+        setCurrentUserIsParticipant(participant_has_joined)
+        
         setRefreshLoading(false)
       }
     }
